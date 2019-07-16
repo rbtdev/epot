@@ -25,6 +25,11 @@
         <input type="range" min="0" max="1" step=".01" value="1" class="slider" id="qbSlider" />
         <span id = 'qbValue'></span>
     </div>
+    <div class='slidecontainer'>
+            <span>TL</span>
+            <input type="range" min="0" max="1" step=".001" value="0" class="slider" id="tlSlider" />
+            <span id = 'tlValue'></span>
+        </div>
 </body>
 
 <script>
@@ -34,23 +39,28 @@
     let qaValue = document.getElementById('qaValue');    
     let qbSlider = document.getElementById('qbSlider');
     let qbValue = document.getElementById('qbValue');
+    let tlSlider = document.getElementById('tlSlider');
+    let tlValue = document.getElementById('tlValue');
     const HEIGHT = canvas.height;
     const WIDTH = canvas.width;
     let opts = {
         ctx,
         HEIGHT,
         WIDTH,
-        TL: .01,
+        TL: .004,
         XA: 400,
         YA: HEIGHT / 2,
         XB: 800,
         YB: HEIGHT / 2,
-        QA: 1,
+        QA: .5,
         QB: 1
     }
 
+    qaSlider.value = opts.QA;
     qaValue.innerHTML = opts.QA;
+    qbSlider.value = opts.QB;
     qbValue.innerHTML = opts.QB;
+    tlValue.innerHTML = opts.TL;
 
     qaSlider.oninput = function () {
         opts.QA = this.value;
@@ -61,6 +71,12 @@
     qbSlider.oninput = function () {
         opts.QB = this.value;
         qbValue.innerHTML = opts.QB;
+        render(opts);
+    }
+
+    tlSlider.oninput = function () {
+        opts.TL = this.value;
+        tlValue.innerHTML = opts.TL;
         render(opts);
     }
 
@@ -81,7 +97,7 @@
             for (let y = 1; y <= HEIGHT; y++) {
                 if ((y == YB && x == XB) || (y == YA && x == XA)) continue;
                 let v = 250 * ((QA / Math.pow((u + dy[y]), 0.5)) + (QB / Math.pow(w + dy[y], 0.5)));
-                let vr = Math.round(v);
+                let vr = Math.round(v*3)/3;
                 if (Math.abs(v - vr) > TL * v || vr > 100) continue;
                 ctx.fillRect(x, y, 1, 1);
             }
