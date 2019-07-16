@@ -45,19 +45,13 @@
     }
 
     qaSlider.oninput = function () {
-        let QA = this.value;
-        render({
-            ...opts,
-            QA: QA
-        })
+        opts.QA = this.value;
+        render(opts);
     }
 
     qbSlider.oninput = function () {
-        let QB = this.value;
-        render({
-            ...opts,
-            QB: QB
-        })
+        opts.QB = this.value;
+        render(opts);
     }
 
     render(opts);
