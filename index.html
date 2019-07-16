@@ -18,29 +18,36 @@
     <div class='slidecontainer'>
         <span>QA</span>
         <input type="range" min="-10" max="10" step=".01" value="1" class="slider" id="qaSlider" />
-        <span id = 'qaValue'></span>
+        <span id='qaValue'></span>
     </div>
     <div class='slidecontainer'>
         <span>QB</span>
         <input type="range" min="-10" max="10" step=".01" value="1" class="slider" id="qbSlider" />
-        <span id = 'qbValue'></span>
+        <span id='qbValue'></span>
     </div>
     <div class='slidecontainer'>
-            <span>TL</span>
-            <input type="range" min="0" max="1" step=".001" value="0" class="slider" id="tlSlider" />
-            <span id = 'tlValue'></span>
-        </div>
+        <span>TL</span>
+        <input type="range" min="0" max="1" step=".001" value="0" class="slider" id="tlSlider" />
+        <span id='tlValue'></span>
+    </div>
+    <div class='slidecontainer'>
+        <span>BANDS</span>
+        <input type="range" min="1" max="50" step=".1" value="3" class="slider" id="bandSlider" />
+        <span id='bandValue'></span>
+    </div>
 </body>
 
 <script>
     let canvas = document.getElementById('canvas');
     let ctx = canvas.getContext('2d');
     let qaSlider = document.getElementById('qaSlider');
-    let qaValue = document.getElementById('qaValue');    
+    let qaValue = document.getElementById('qaValue');
     let qbSlider = document.getElementById('qbSlider');
     let qbValue = document.getElementById('qbValue');
     let tlSlider = document.getElementById('tlSlider');
     let tlValue = document.getElementById('tlValue');
+    let bandSlider = document.getElementById('bandSlider');
+    let bandValue = document.getElementById('bandValue');
     const HEIGHT = canvas.height;
     const WIDTH = canvas.width;
     let opts = {
@@ -53,7 +60,8 @@
         XB: 800,
         YB: HEIGHT / 2,
         QA: .5,
-        QB: 1
+        QB: 1,
+        BANDS: 3
     }
 
     qaSlider.value = opts.QA;
@@ -61,6 +69,8 @@
     qbSlider.value = opts.QB;
     qbValue.innerHTML = opts.QB;
     tlValue.innerHTML = opts.TL;
+    bandSlider.value = opts.BANDS;
+    bandValue.innerHTML = opts.BANDS;
 
     qaSlider.oninput = function () {
         opts.QA = this.value;
@@ -80,24 +90,30 @@
         render(opts);
     }
 
+    bandSlider.oninput = function () {
+        opts.BANDS = this.value;
+        bandValue.innerHTML = opts.BANDS;
+        render(opts);
+    }
+
     render(opts);
 
     function render(opts) {
-        let { ctx, HEIGHT, WIDTH, TL, XA, YA, XB, YB, QA, QB } = opts;
+        let { ctx, BANDS, HEIGHT, WIDTH, TL, XA, YA, XB, YB, QA, QB } = opts;
         var dy = [];
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
-        for (let y = 1; y <= HEIGHT; y++) {
+        for (let y = 0; y < HEIGHT; y++) {
             let v = Math.pow((y - HEIGHT / 2), 2);
             dy.push(v);
             console.log(v)
         }
-        for (let x = 0; x <= WIDTH; x++) {
-            let u = Math.pow((x - XA), 2);
-            let w = Math.pow((x - XB), 2);
-            for (let y = 1; y <= HEIGHT; y++) {
+        for (let x = 0; x < WIDTH; x++) {
+            let u = (x - XA) * (x - XA);
+            let w = (x - XB) * (x - XB);
+            for (let y = 0; y < HEIGHT; y++) {
                 if ((y == YB && x == XB) || (y == YA && x == XA)) continue;
-                let v = 250 * ((QA / Math.pow((u + dy[y]), 0.5)) + (QB / Math.pow(w + dy[y], 0.5)));
-                let vr = Math.round(v*3)/3;
+                let v = 250 * ((QA / Math.sqrt(u + dy[y])) + (QB / Math.sqrt(w + dy[y])));
+                let vr = Math.round(v * BANDS) / BANDS;
                 if (Math.abs(v - vr) > TL * v || vr > 100) continue;
                 ctx.fillRect(x, y, 1, 1);
             }
