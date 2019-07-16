@@ -1,0 +1,90 @@
+<html>
+
+<head>
+    <style>
+        #canvas {
+            border: 1px solid black;
+        }
+
+        .slidecontainer {
+            float: left;
+            width: 100%; /* Width of the outside container */
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id='canvas' width='1200' height='600'></canvas>
+    <div class='slidecontainer'>
+        <span>QA</span>
+        <input type="range" min="0" max="1" step=".1" value="1" class="slider" id="qaSlider" />
+    </div>
+    <div class='slidecontainer'>
+        <span>QB</span>
+        <input type="range" min="0" max="1" step=".1" value="1" class="slider" id="qbSlider" />
+    </div>
+</body>
+
+<script>
+    let canvas = document.getElementById('canvas');
+    let ctx = canvas.getContext('2d');
+    let qaSlider = document.getElementById('qaSlider');
+    const HEIGHT = canvas.height;
+    const WIDTH = canvas.width;
+    let opts = {
+        ctx,
+        HEIGHT,
+        WIDTH,
+        TL: .01,
+        XA: 400,
+        YA: HEIGHT / 2,
+        XB: 800,
+        YB: HEIGHT / 2,
+        QA: 1,
+        QB: 1
+    }
+
+    qaSlider.oninput = function () {
+        let QA = this.value;
+        render({
+            ...opts,
+            QA: QA
+        })
+    }
+
+    qbSlider.oninput = function () {
+        let QB = this.value;
+        render({
+            ...opts,
+            QB: QB
+        })
+    }
+
+    render(opts);
+
+    function render(opts) {
+        let { ctx, HEIGHT, WIDTH, TL, XA, YA, XB, YB, QA, QB } = opts;
+        var dy = [];
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        for (let y = 1; y <= HEIGHT; y++) {
+            let v = Math.pow((y - HEIGHT / 2), 2);
+            dy.push(v);
+            console.log(v)
+        }
+        for (let x = 0; x <= WIDTH; x++) {
+            let u = Math.pow((x - XA), 2);
+            let w = Math.pow((x - XB), 2);
+            for (let y = 1; y <= HEIGHT; y++) {
+                if ((y == YB && x == XB) || (y == YA && x == XA)) continue;
+                let v = 250 * ((QA / Math.pow((u + dy[y]), 0.5)) + (QB / Math.pow(w + dy[y], 0.5)));
+                let vr = Math.round(v);
+                if (Math.abs(v - vr) > TL * v || vr > 100) continue;
+                ctx.fillRect(x, y, 1, 1);
+            }
+        }
+
+    }
+
+</script>
+
+</html>
