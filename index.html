@@ -38,12 +38,23 @@
         <button id="startButton">Draw</button>
     </div>
     <div>
-        <div id = 'progressBar'></div>
+        <div id='progressBar'></div>
     </div>
 </body>
 
 <script>
     let charges = count => {
+        // return [{
+        //         x: 400,
+        //         y: HEIGHT/2,
+        //         q: 10
+        //     },{
+        //         x: 800,
+        //         y: HEIGHT/2,
+        //         q: -5
+        //     }
+        //     ];
+
         let charges = [];
         for (charge = 0; charge < count; charge++) {
             charges.push({
@@ -64,9 +75,9 @@
     let countValue = document.getElementById('countValue');
     let startButton = document.getElementById('startButton');
     let progressBar = document.getElementById('progressBar');
-    let progress = ((count, total) => {
-        progressBar.innerHTML = `${count} out of ${total}`
-    });
+    let progress = (message) => {
+        progressBar.innerHTML = message
+    };
     countValue.innerHTML = countSlider.value;
     const HEIGHT = epot.height;
     const WIDTH = epot.width;
@@ -82,11 +93,11 @@
 
     countSlider.oninput = function () {
         countValue.innerHTML = this.value;
-        opts.charges = charges(this.value);
     }
 
 
     startButton.onclick = async function () {
+        opts.charges = charges(countSlider.value);
         render(opts, progress);
     }
 
@@ -96,13 +107,17 @@
 
 
     async function render(opts, onProgress) {
+        onProgress("Computing...");
+        await sleep(0);
         let { gridSteps, epot, efield, HEIGHT, WIDTH, charges } = opts;
-        let total = HEIGHT*WIDTH*charges.length;
+        let total = HEIGHT * WIDTH * charges.length;
         let count = 0;
         let vMax = Number.NEGATIVE_INFINITY;
         let vMin = Number.POSITIVE_INFINITY;
         let plot = [];
         for (let x = 0; x < WIDTH; x++) {
+            onProgress(`${(100 * (x + 1) / WIDTH).toFixed(0)}%`);
+            await sleep(0);
             plot.push([]);
             for (charge of charges) charge.dx = (x - charge.x) * (x - charge.x);
             for (let y = 0; y < HEIGHT; y++) {
@@ -111,9 +126,6 @@
                     charge.dy = (y - charge.y) * (y - charge.y);
                     charge.dist = Math.sqrt(charge.dx + charge.dy);
                     v += (charge.dist ? charge.q / charge.dist : 0);
-                    //await sleep(0);
-                    //if (count % 100 === 0) onProgress(count,total);
-                    //count++;
                 }
                 if (v > vMax) vMax = v;
                 if (v < vMin) vMin = v;
@@ -132,11 +144,13 @@
 
         epot.clearRect(0, 0, WIDTH, HEIGHT);
         let range = vMax - vMin;
+        let mag = Math.max(Math.abs(vMax),Math.abs(vMin));
         for (let x = 0; x < WIDTH; x++) {
             for (let y = 0; y < HEIGHT; y++) {
                 let v = plot[x][y];
-                let alpha = Math.abs(v / range) * 48;
                 let color = { r: 0, g: 0, b: 0 }
+                let percent = range?Math.abs(v/range):0;
+                let alpha = percent*50;
                 if (v > 0) color.r = 255;
                 else color.b = 255;
                 epot.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
