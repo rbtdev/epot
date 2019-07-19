@@ -48,10 +48,11 @@
         //         x: 400,
         //         y: HEIGHT/2,
         //         q: 10
-        //     },{
+        //     }
+        //     ,{
         //         x: 800,
         //         y: HEIGHT/2,
-        //         q: -5
+        //         q: -10
         //     }
         //     ];
 
@@ -85,7 +86,7 @@
     let opts = {
         epot: epotCtx,
         efield: efieldCtx,
-        gridSteps: 50,
+        gridSteps: 20,
         HEIGHT,
         WIDTH,
         charges: charges(countSlider.value)
@@ -98,18 +99,22 @@
 
     startButton.onclick = async function () {
         opts.charges = charges(countSlider.value);
-        render(opts, progress);
+        epotCtx.clearRect(0, 0, WIDTH, HEIGHT);
+        efieldCtx.clearRect(0, 0, WIDTH, HEIGHT);
+        await potential(opts, progress);
+        await field(opts, progress);
     }
 
-    render(opts, progress).then(() => {
-        console.log('Done');
+    potential(opts, progress).then(() => {
+        field(opts, progress).then(() => {
+            console.log('Done');
+        });
     });
 
-
-    async function render(opts, onProgress) {
+    async function potential(opts, onProgress) {
+        let { gridSteps, epot, efield, HEIGHT, WIDTH, charges } = opts;
         onProgress("Computing...");
         await sleep(0);
-        let { gridSteps, epot, efield, HEIGHT, WIDTH, charges } = opts;
         let total = HEIGHT * WIDTH * charges.length;
         let count = 0;
         let vMax = Number.NEGATIVE_INFINITY;
@@ -133,30 +138,71 @@
             }
         }
 
-        // efield.clearRect(0, 0, WIDTH, HEIGHT);
-        // efield.fillStyle = '#000000';
-        // for (let x = 0; x < WIDTH; x += gridSteps) {
-        //     for (let y = 0; y < HEIGHT; y += gridSteps) {
-        //         efield.fillRect(x, y, 10, 10);
-        //     }
-        // }
-
-
-        epot.clearRect(0, 0, WIDTH, HEIGHT);
         let range = vMax - vMin;
-        let mag = Math.max(Math.abs(vMax),Math.abs(vMin));
+        let mag = Math.max(Math.abs(vMax), Math.abs(vMin));
         for (let x = 0; x < WIDTH; x++) {
             for (let y = 0; y < HEIGHT; y++) {
                 let v = plot[x][y];
                 let color = { r: 0, g: 0, b: 0 }
-                let percent = range?Math.abs(v/range):0;
-                let alpha = percent*50;
+                let percent = range ? Math.abs(v / range) : 0;
+                let alpha = percent * 50;
                 if (v > 0) color.r = 255;
                 else color.b = 255;
                 epot.fillStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
                 epot.fillRect(x, y, 1, 1);
             }
             await sleep(0);
+        }
+    }
+
+    async function field(opts, onProgress) {
+        let { gridSteps, epot, efield, HEIGHT, WIDTH, charges } = opts;
+        efield.clearRect(0, 0, WIDTH, HEIGHT);
+        efield.fillStyle = '#000000';
+        let total = HEIGHT * WIDTH * charges.length;
+        let count = 0;
+        let plot = [];
+        for (let x = gridSteps / 2; x < WIDTH; x += gridSteps) {
+            onProgress(`${(100 * (x + 1) / WIDTH).toFixed(0)}%`);
+            await sleep(0);
+            plot.push([]);
+            for (charge of charges) charge.dx = (x - charge.x) * (x - charge.x);
+            for (let y = gridSteps / 2; y < HEIGHT; y += gridSteps) {
+                let e = {
+                    x: 0,
+                    y: 0,
+                    fx: 0,
+                    fy: 0,
+                    angle: 0
+                }
+                for (charge of charges) {
+                    charge.dy = (y - charge.y) * (y - charge.y);
+                    charge.dist = Math.sqrt(charge.dx + charge.dy);
+                    let angle = Math.atan2(y - charge.y, x - charge.x);
+                    let f = charge.q / Math.pow(charge.dist, 2)
+                    e.fx += f * Math.cos(angle);
+                    e.fy += f * Math.sin(angle);
+                }
+
+                let angle = Math.atan2(e.fy, e.fx) //+ Math.PI/2;
+                let dx = 0.8*gridSteps * Math.cos(angle);
+                let dy = 0.8*gridSteps * Math.sin(angle);
+                let a1dx = 0.6*gridSteps * Math.cos(angle - Math.PI/16);
+                let a1dy = 0.6*gridSteps * Math.sin(angle - Math.PI/16);
+                let a2dx = 0.6*gridSteps * Math.cos(angle + Math.PI/16);
+                let a2dy = 0.6*gridSteps * Math.sin(angle + Math.PI/16);
+                let alpha = 300* Math.sqrt(e.fx*e.fx + e.fy*e.fy);
+                efield.strokeStyle = `rgba(0,128,0,${alpha})`;
+                efield.beginPath();
+                efield.moveTo(x, y);
+                efield.lineTo(x + dx, y + dy);
+                efield.lineTo(x + a1dx, y + a1dy);
+                efield.lineTo(x + a2dx, y + a2dy);
+                efield.lineTo(x + dx, y + dy);
+                efield.stroke();
+                efield.fillStyle = `rgba(0,128,0,${alpha})`;
+                efield.fill();
+            }
         }
     }
 
